@@ -4,6 +4,8 @@
 #include <string>
 #include <iomanip>
 #include <limits>
+#include "Restocking.h"
+
 using namespace std;
 
 class Product {
@@ -16,12 +18,31 @@ private:
 
 public:
     Product(int id, string name, int quantity,
-            int dailySales, int deliveryDays) {
-        this->id = id;
-        this->name = name;
-        this->quantity = quantity;
-        this->dailySales = dailySales;
-        this->deliveryDays = deliveryDays;
+            int dailySales, int deliveryDays)
+        : id(id),
+          name(name),
+          quantity(quantity),
+          dailySales(dailySales),
+          deliveryDays(deliveryDays) {}
+
+    int getId() const {
+        return id;
+    }
+
+    string getName() const {
+        return name;
+    }
+
+    int getQuantity() const {
+        return quantity;
+    }
+
+    int getDailySales() const {
+        return dailySales;
+    }
+
+    int getDeliveryDays() const {
+        return deliveryDays;
     }
 
     void display() const {
@@ -30,36 +51,6 @@ public:
              << setw(12) << quantity
              << setw(12) << dailySales
              << setw(12) << deliveryDays << '\n';
-    }
-
-    bool needsRestocking() const {
-        if (dailySales <= 0)
-            return false;
-
-        return quantity <= dailySales * deliveryDays;
-    }
-
-    void checkRestocking() const {
-        cout << "\nProduct: " << name << '\n';
-
-        if (dailySales <= 0) {
-            cout << "Sales data unavailable or no recent sales.\n";
-            return;
-        }
-
-        double daysRemaining =
-            static_cast<double>(quantity) / dailySales;
-
-        cout << fixed << setprecision(1);
-        cout << "Estimated stock duration: "
-             << daysRemaining << " days\n";
-        cout << "Supplier delivery time: "
-             << deliveryDays << " days\n";
-
-        if (needsRestocking())
-            cout << "ALERT: Restocking recommended!\n";
-        else
-            cout << "Status: Stock is sufficient for delivery time.\n";
     }
 };
 
@@ -78,24 +69,26 @@ void displayInventory(const vector<Product>& products) {
 
     cout << string(66, '-') << '\n';
 
-    for (const Product& product : products)
+    for (const Product& product : products) {
         product.display();
+    }
 }
 
 void showRestockingAlerts(const vector<Product>& products) {
-    cout << "\n======= RESTOCKING ALERTS =======\n";
-
-    bool alertFound = false;
+    vector<RestockItem> inventory;
 
     for (const Product& product : products) {
-        if (product.needsRestocking()) {
-            product.checkRestocking();
-            alertFound = true;
-        }
+        inventory.push_back({
+            product.getId(),
+            product.getName(),
+            product.getQuantity(),
+            product.getDailySales(),
+            product.getDeliveryDays()
+        });
     }
 
-    if (!alertFound)
-        cout << "No restocking alerts at present.\n";
+    cout << "\n======= SMART RESTOCKING ANALYSIS =======\n";
+    Restocking::analyze(inventory);
 }
 
 void addProduct(vector<Product>& products) {
@@ -103,11 +96,19 @@ void addProduct(vector<Product>& products) {
     string name;
 
     cout << "\nEnter product ID: ";
-    if (!(cin >> id)) {
-        cout << "Invalid ID.\n";
+
+    if (!(cin >> id) || id <= 0) {
+        cout << "Invalid product ID.\n";
         cin.clear();
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
         return;
+    }
+
+    for (const Product& product : products) {
+        if (product.getId() == id) {
+            cout << "This product ID already exists.\n";
+            return;
+        }
     }
 
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -115,7 +116,13 @@ void addProduct(vector<Product>& products) {
     cout << "Enter product name: ";
     getline(cin, name);
 
+    if (name.empty()) {
+        cout << "Product name cannot be empty.\n";
+        return;
+    }
+
     cout << "Enter current stock: ";
+
     if (!(cin >> quantity) || quantity < 0) {
         cout << "Invalid stock quantity.\n";
         cin.clear();
@@ -124,6 +131,7 @@ void addProduct(vector<Product>& products) {
     }
 
     cout << "Enter average daily sales: ";
+
     if (!(cin >> dailySales) || dailySales < 0) {
         cout << "Invalid daily sales.\n";
         cin.clear();
@@ -132,6 +140,7 @@ void addProduct(vector<Product>& products) {
     }
 
     cout << "Enter supplier delivery days: ";
+
     if (!(cin >> deliveryDays) || deliveryDays < 0) {
         cout << "Invalid delivery time.\n";
         cin.clear();
@@ -139,8 +148,9 @@ void addProduct(vector<Product>& products) {
         return;
     }
 
-    products.emplace_back(id, name, quantity,
-                          dailySales, deliveryDays);
+    products.emplace_back(
+        id, name, quantity, dailySales, deliveryDays
+    );
 
     cout << "Product added successfully!\n";
 }
@@ -152,7 +162,7 @@ int main() {
         Product(103, "Medicine C", 10, 6, 3)
     };
 
-    int choice;
+    int choice = 0;
 
     cout << "SMART INVENTORY INTELLIGENCE SYSTEM\n";
 
