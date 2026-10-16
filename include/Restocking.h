@@ -3,7 +3,6 @@
 #define RESTOCKING_H
 
 #include <string>
-#include <vector>
 
 struct RestockItem {
     int id;
@@ -15,7 +14,8 @@ struct RestockItem {
 
 class Restocking {
 public:
-    static void analyze(const std::vector<RestockItem>& products,
+    static void analyze(const RestockItem products[],
+                        int count,
                         int bufferDays = 2);
 };
 

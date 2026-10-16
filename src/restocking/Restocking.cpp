@@ -6,18 +6,23 @@
 #include <iostream>
 #include <queue>
 #include <algorithm>
+#include <string>
 
-void Restocking::analyze(const std::vector<RestockItem>& products,
+void Restocking::analyze(const RestockItem products[],
+                         int count,
                          int bufferDays) {
-    if (bufferDays < 0) {
-        std::cout << "Buffer days cannot be negative.\n";
+    if (count < 0 || bufferDays < 0 ||
+        (count > 0 && products == nullptr)) {
+        std::cout << "Invalid restocking input.\n";
         return;
     }
 
     std::priority_queue<PurchaseOrder> orders;
     bool foundLowStock = false;
 
-    for (const RestockItem& product : products) {
+    for (int i = 0; i < count; i++) {
+        const RestockItem& product = products[i];
+
         if (product.quantity < 0 ||
             product.dailySales < 0 ||
             product.deliveryDays < 0) {
@@ -40,11 +45,7 @@ void Restocking::analyze(const std::vector<RestockItem>& products,
 
         foundLowStock = true;
 
-        int orderQuantity = std::max(
-            0,
-            reorderPoint - product.quantity
-        );
-
+        int orderQuantity = reorderPoint - product.quantity;
         int priority;
 
         if (daysLeft <= product.deliveryDays) {
@@ -56,6 +57,7 @@ void Restocking::analyze(const std::vector<RestockItem>& products,
         }
 
         std::string severity;
+
         if (priority == 3) {
             severity = "CRITICAL";
         } else if (priority == 2) {

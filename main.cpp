@@ -1,12 +1,13 @@
 
 #include <iostream>
-#include <vector>
 #include <string>
 #include <iomanip>
 #include <limits>
 #include "Restocking.h"
 
 using namespace std;
+
+const int MAX_PRODUCTS = 100;
 
 class Product {
 private:
@@ -17,13 +18,14 @@ private:
     int deliveryDays;
 
 public:
-    Product(int id, string name, int quantity,
+    Product()
+        : id(0), name(""), quantity(0),
+          dailySales(0), deliveryDays(0) {}
+
+    Product(int id, const string& name, int quantity,
             int dailySales, int deliveryDays)
-        : id(id),
-          name(name),
-          quantity(quantity),
-          dailySales(dailySales),
-          deliveryDays(deliveryDays) {}
+        : id(id), name(name), quantity(quantity),
+          dailySales(dailySales), deliveryDays(deliveryDays) {}
 
     int getId() const {
         return id;
@@ -54,8 +56,8 @@ public:
     }
 };
 
-void displayInventory(const vector<Product>& products) {
-    if (products.empty()) {
+void displayInventory(const Product products[], int count) {
+    if (count == 0) {
         cout << "\nInventory is empty.\n";
         return;
     }
@@ -69,29 +71,34 @@ void displayInventory(const vector<Product>& products) {
 
     cout << string(66, '-') << '\n';
 
-    for (const Product& product : products) {
-        product.display();
+    for (int i = 0; i < count; i++) {
+        products[i].display();
     }
 }
 
-void showRestockingAlerts(const vector<Product>& products) {
-    vector<RestockItem> inventory;
+void showRestockingAlerts(const Product products[], int count) {
+    RestockItem inventory[MAX_PRODUCTS];
 
-    for (const Product& product : products) {
-        inventory.push_back({
-            product.getId(),
-            product.getName(),
-            product.getQuantity(),
-            product.getDailySales(),
-            product.getDeliveryDays()
-        });
+    for (int i = 0; i < count; i++) {
+        inventory[i] = {
+            products[i].getId(),
+            products[i].getName(),
+            products[i].getQuantity(),
+            products[i].getDailySales(),
+            products[i].getDeliveryDays()
+        };
     }
 
     cout << "\n======= SMART RESTOCKING ANALYSIS =======\n";
-    Restocking::analyze(inventory);
+    Restocking::analyze(inventory, count);
 }
 
-void addProduct(vector<Product>& products) {
+void addProduct(Product products[], int& count) {
+    if (count >= MAX_PRODUCTS) {
+        cout << "Inventory is full. Cannot add more products.\n";
+        return;
+    }
+
     int id, quantity, dailySales, deliveryDays;
     string name;
 
@@ -104,8 +111,8 @@ void addProduct(vector<Product>& products) {
         return;
     }
 
-    for (const Product& product : products) {
-        if (product.getId() == id) {
+    for (int i = 0; i < count; i++) {
+        if (products[i].getId() == id) {
             cout << "This product ID already exists.\n";
             return;
         }
@@ -148,20 +155,22 @@ void addProduct(vector<Product>& products) {
         return;
     }
 
-    products.emplace_back(
+    products[count] = Product(
         id, name, quantity, dailySales, deliveryDays
     );
 
+    count++;
     cout << "Product added successfully!\n";
 }
 
 int main() {
-    vector<Product> products = {
+    Product products[MAX_PRODUCTS] = {
         Product(101, "Medicine A", 40, 8, 7),
         Product(102, "Medicine B", 100, 5, 7),
         Product(103, "Medicine C", 10, 6, 3)
     };
 
+    int productCount = 3;
     int choice = 0;
 
     cout << "SMART INVENTORY INTELLIGENCE SYSTEM\n";
@@ -183,15 +192,15 @@ int main() {
 
         switch (choice) {
             case 1:
-                displayInventory(products);
+                displayInventory(products, productCount);
                 break;
 
             case 2:
-                addProduct(products);
+                addProduct(products, productCount);
                 break;
 
             case 3:
-                showRestockingAlerts(products);
+                showRestockingAlerts(products, productCount);
                 break;
 
             case 4:
