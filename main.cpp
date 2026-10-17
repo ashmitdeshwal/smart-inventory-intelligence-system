@@ -8,8 +8,8 @@ using namespace std;
 
 const int MAX_PRODUCTS = 100;
 
-struct Product {
-    int id;
+
+
     string name;
     int quantity;
     int dailySales;
